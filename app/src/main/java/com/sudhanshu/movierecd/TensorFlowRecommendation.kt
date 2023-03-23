@@ -16,8 +16,7 @@ class TensorFlowRecommendation(private val context: Context, private val input: 
         val buffer = loadModelFile(context.assets,"model.tflite")
         val tfLite = buffer?.let { Interpreter(it) }!!
         Log.d("myLog", "Model loaded")
-
-
+        Log.d("myLog", "Model loaded")
     }
 }
 
