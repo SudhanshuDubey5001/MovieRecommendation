@@ -1,29 +1,105 @@
 package com.sudhanshu.movierecd
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateListOf
+import com.sudhanshu.movierecd.utils.Config
 import com.sudhanshu.movierecd.data.Movie
+import com.sudhanshu.movierecd.data.Movie2
+import com.sudhanshu.movierecd.utils.MovieUtils
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
+val recmdMoviesList = mutableStateListOf<Movie>()
 
 class RecmdMovies : ComponentActivity() {
+
+    val recommendationClient = RecommendationClient(this, Config())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val tf = TensorFlowRecommendation(this)
-        tf.performRecommendation()
+        val movieUtils = MovieUtils(this)
+        var tensorFlowMovieList: List<Movie2>
+        var inputMovieData = mutableListOf<Movie2>()
 
-        val moviesList2 = listOf<Movie>(Movie("Batman",
-            "here we go again",
-            "2.4",
-            "thriller",
-            "https://m.media-amazon.com/images/M/MV5BMTMwNjAxMTc0Nl5BMl5BanBnXkFtZTcwODc3ODk5Mg@@._V1_SX300.jpg"
-            ,false))
+        runBlocking {
+            launch {
+                tensorFlowMovieList = movieUtils.getContent()
+                //search movies in the tensorflow dataset otherwise add movies with similar genres
+                var found = false
 
-        setContent{
-            View().makeMovieList(movies = moviesList2, "Recommendations",false)
+                for (i in selectedMovies) {
+                    for (j in tensorFlowMovieList) {
+                        if (j.title.contains(i.title, true)) {
+                            inputMovieData.add(j)
+                            found = true
+                            Log.d("myLog", "Found!! :)")
+                        }
+                    }
+                }
+
+                if (!found) {
+                    for (i in selectedMovies) {
+                        for (j in tensorFlowMovieList) {
+                            for (genre in j.genres) {
+                                if (i.genre.contains(genre, true)) {
+                                    if (inputMovieData.size < 10) inputMovieData.add(j)
+                                }
+                            }
+                            inputMovieData.toSet().toList() //to remove duplicate items
+                        }
+                        inputMovieData.toSet().toList() //to remove duplicate items
+                    }
+                }
+
+                Log.d("myLog", "Movies added: " + inputMovieData)
+
+                recommendationClient.load()
+                val list = recommendationClient.recommend(inputMovieData)
+                Log.d("myLog", "Movies recommendations : " + list)
+                //now search all the 10 movies to get Movie data->
+                var searchQueries = mutableListOf<String>()
+                for (result in list) {
+                    searchQueries.add(result.item.title)
+                }
+                searchMovieAPICallForArray(searchQueries)
+            }
+        }
+//        recmdMoviesList.add(
+//            Movie(
+//                "Batman",
+//                "here we go again",
+//                "2.4",
+//                "thriller",
+//                "https://m.media-amazon.com/images/M/MV5BMTMwNjAxMTc0Nl5BMl5BanBnXkFtZTcwODc3ODk5Mg@@._V1_SX300.jpg",
+//                false
+//            )
+//        )
+
+        setContent {
+            View().makeMovieList(
+                movies = recmdMoviesList,
+                "Recommendations",
+                false,
+                this
+            )
         }
 
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                selectedMovies.clear()
+            }
+        })
     }
+
+    override fun onStop() {
+        super.onStop()
+        recommendationClient.unload()
+    }
+
 }
 

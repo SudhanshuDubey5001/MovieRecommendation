@@ -15,20 +15,37 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 
 
-var selectedMovies = mutableStateListOf<Movie>()
+var selectedMovies = mutableListOf<Movie>()
 val constants: Constants = Constants()
 var isLoading = false
 val genres = mutableMapOf<Int, String>()
 var moviesList = mutableStateListOf<Movie>()
 
+
 class MainActivity : ComponentActivity() {
+
+    override fun onStart() {
+        super.onStart()
+        //clear the list when activity starts
+        selectedMovies.clear()
+        moviesList.clear()
+        View().progressLoader.value = true
+        Log.d("my","Lists are clear! ")
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             setupGenreCodesToGenre()
-            View().makeMovieList(moviesList, "Add movies", true)
+            View().makeMovieList(moviesList, "Add movies", true,this)
         }
     }
+}
+
+//catch the error
+fun onFailure(t: Throwable) {
+    Log.d("myLog", "Error: " + t.toString())
 }
 
 //setup genre codes
@@ -72,11 +89,11 @@ fun loadMovieDiscoverData() {
 
 //catch response and make list
 fun onResponse(response: DiscoverMoviesResponse) {
-
+    View().progressLoader.value = false
     Log.d("myLog", "Response: " + response.toString())
     for (result in response.results) {
         //setup genre string
-        var setGenre: String = ""
+        var setGenre = ""
         var i = 0     //for erasing slash at the end of genre
         for (ids in result.genre_ids) {
             val slash = if (i == result.genre_ids.lastIndex) "" else "/"
@@ -97,11 +114,6 @@ fun onResponse(response: DiscoverMoviesResponse) {
     }
 }
 
-//catch the error
-fun onFailure(t: Throwable) {
-    Log.d("myLog", "Error: " + t.toString())
-}
-
 //search the movie
 fun searchMovieAPICall(query: String) {
     val queryModified = query.replace("\\s".toRegex(), "+")
@@ -119,8 +131,52 @@ fun searchMovieAPICall(query: String) {
     )
 }
 
+var i = 0
+var searchQueries = listOf<String>()
+fun searchMovieAPICallForArray(query: List<String>) {
+    searchQueries = query
+    if(i<query.size) {
+        val queryModified = searchQueries[i].substringBefore("(").replace("\\s".toRegex(), "+")
+        Log.d("myLog", "Search query: " + queryModified)
+        val compD = CompositeDisposable()
+        compD.add(
+            RetrofitBuilder()
+                .build(constants.baseURL_OMdb)
+                .searchOMdb(constants.OMdb_API_KEY, queryModified)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                    { response -> response_searchQueryForArray(response) },
+                    { t -> onFailure(t) })
+        )
+    }else{
+        i=0
+        Log.d("myLog","Search complete!!")
+    }
+}
+
+fun response_searchQueryForArray(response: SearchMovie) {
+    View().progressLoader.value = false
+    Log.d("myLog", response.toString())
+    //dismiss the progress hud
+    isLoading = false
+    //add the search result at first index
+    val movie = Movie(
+        response.Title,
+        response.Plot,
+        response.imdbRating,
+        response.Genre,
+        response.Poster,
+        false
+    )
+    recmdMoviesList.add(movie)
+    i++;
+    searchMovieAPICallForArray(searchQueries)
+}
+
 //catch the response of search query
 fun response_searchQuery(response: SearchMovie) {
+    View().progressLoader.value = false
     Log.d("myLog", response.toString())
     //dismiss the progress hud
     isLoading = false
@@ -130,17 +186,19 @@ fun response_searchQuery(response: SearchMovie) {
         moviesList.add(movie)
     }
     //add the search result at first index
+    val movie = Movie(
+        response.Title,
+        response.Plot,
+        response.imdbRating,
+        response.Genre,
+        response.Poster,
+        false
+    )
     moviesList.add(
         0,
-        Movie(
-            response.Title,
-            response.Plot,
-            response.imdbRating,
-            response.Genre,
-            response.Poster,
-            false
-        )
+        movie
     )
+//    recmdMoviesList.add(movie)
 }
 
 

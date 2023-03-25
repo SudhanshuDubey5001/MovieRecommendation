@@ -1,7 +1,10 @@
 package com.sudhanshu.movierecd
 
+import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,15 +32,24 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.sudhanshu.movierecd.data.Movie
 
-class View {
+class View() {
+
+    var progressLoader = mutableStateOf(false)
 
     @Composable
     fun progressHUD() {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        if (progressLoader.value) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .fillMaxHeight()
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
             CircularProgressIndicator()
         }
     }
@@ -45,7 +57,7 @@ class View {
     //make movie frame using data class of Movie attributes
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    fun movieFrame(movie: Movie) {
+    fun movieFrame(movie: Movie, context: Context) {
         Surface(shape = MaterialTheme.shapes.medium, shadowElevation = 10.dp) {
             Row(modifier = Modifier.padding(10.dp)) {
                 if (movie.isTMdb) {
@@ -96,8 +108,16 @@ class View {
                         Switch(checked = checked.value, onCheckedChange = {
                             checked.value = it
                             if (checked.value) {
-                                selectedMovies.add(movie)
+                                if (selectedMovies.size == 10) Toast.makeText(
+                                    context,
+                                    "Favourite list full!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                else selectedMovies.add(movie)
                                 Log.d("myLog", "Movies added : " + movie.title)
+                            } else {
+                                selectedMovies.remove(movie)
+                                Log.d("myLog","Movies removed: "+movie.title)
                             }
                         })
                     }
@@ -109,11 +129,14 @@ class View {
 
     //use movie frame to make lists of movie frame
     @Composable
-    fun makeMovieList(movies: List<Movie>, appBarTitle: String, isSearchBarEnabled: Boolean) {
+    fun makeMovieList(
+        movies: List<Movie>,
+        appBarTitle: String,
+        isSearchBarEnabled: Boolean,
+        context: Context
+    ) {
         //show circular progress bar when necessary by changing load value
-        var load by remember {
-            mutableStateOf(false)
-        }
+        progressHUD()
         val listState = rememberLazyListState()
         Column {
             //App bar
@@ -147,7 +170,7 @@ class View {
                                         modifier = Modifier
                                             .padding(all = 10.dp)
                                             .clickable {
-                                                load = true
+                                                progressLoader.value = true
                                                 Log.d("myLog", "Query: " + textState.value.text)
                                                 searchMovieAPICall(textState.value.text)
                                             }
@@ -162,12 +185,10 @@ class View {
             //list of movies
 
             Box {
-                if (load) progressHUD()
                 LazyColumn(state = listState) {
                     items(movies.size) { index ->
-                        movieFrame(movie = movies[index])
+                        movieFrame(movie = movies[index], context)
                     }
-                    load = false
                 }
                 addFloatingButton()
             }
@@ -188,8 +209,14 @@ class View {
             val context = LocalContext.current
             FloatingActionButton(
                 onClick = {
-                    val intent = Intent(context, RecmdMovies::class.java)
-                    context.startActivity(intent)
+                    if (selectedMovies.size > 0) {
+                        val intent = Intent(context, RecmdMovies::class.java)
+                        context.startActivity(intent)
+                    } else Toast.makeText(
+                        context,
+                        "Favourite movies list is empty",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }, containerColor = Color(ContextCompat.getColor(context, R.color.titleColor)),
                 contentColor = Color.White
             ) {

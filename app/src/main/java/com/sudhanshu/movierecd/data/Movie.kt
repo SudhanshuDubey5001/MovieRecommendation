@@ -6,5 +6,5 @@ data class Movie(
     val rating: String,
     val genre: String,
     val poster: String,
-    val isTMdb: Boolean
+    val isTMdb: Boolean,
 )
