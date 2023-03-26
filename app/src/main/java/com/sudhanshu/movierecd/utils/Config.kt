@@ -38,7 +38,7 @@ class Config {
         private const val REMOTE_MODEL_NAME = "recommendations"
         private const val DEFAULT_INPUT_LENGTH = 10
         private const val DEFAULT_OUTPUT_LENGTH = 100
-        private const val DEFAULT_TOP_K = 10
+        private const val DEFAULT_TOP_K = 20
         private const val PAD_ID = 0
         private const val DEFAULT_OUTPUT_IDS_INDEX = 1
         private const val DEFAULT_OUTPUT_SCORES_INDEX = 0

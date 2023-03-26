@@ -10,7 +10,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -49,16 +54,18 @@ class View() {
             ) {
                 CircularProgressIndicator()
             }
-        } else {
-            CircularProgressIndicator()
         }
     }
 
     //make movie frame using data class of Movie attributes
-    @OptIn(ExperimentalGlideComposeApi::class)
+    @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)
     @Composable
     fun movieFrame(movie: Movie, context: Context) {
-        Surface(shape = MaterialTheme.shapes.medium, shadowElevation = 10.dp) {
+        val openDialog = remember { mutableStateOf(false) }
+
+        Surface(shape = MaterialTheme.shapes.medium, shadowElevation = 10.dp, onClick = {
+            openDialog.value = true
+        }) {
             Row(modifier = Modifier.padding(10.dp)) {
                 if (movie.isTMdb) {
                     GlideImage(
@@ -98,33 +105,63 @@ class View() {
                         Text(movie.rating)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    val checked = remember {
-                        mutableStateOf(false)
-                    }
-                    //see if the movie is already added in favourite list, then toggle it true
-                    if (selectedMovies.contains(movie)) checked.value = true
 
-                    Surface(modifier = Modifier.align(Alignment.End)) {
-                        Switch(checked = checked.value, onCheckedChange = {
-                            checked.value = it
-                            if (checked.value) {
-                                if (selectedMovies.size == 10) Toast.makeText(
-                                    context,
-                                    "Favourite list full!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                else selectedMovies.add(movie)
-                                Log.d("myLog", "Movies added : " + movie.title)
-                            } else {
-                                selectedMovies.remove(movie)
-                                Log.d("myLog","Movies removed: "+movie.title)
-                            }
-                        })
-                    }
+//                    Surface(modifier = Modifier.align(Alignment.End)) {
+//                    }
+
                 }
             }
         }
         Spacer(modifier = Modifier.height(10.dp))
+        MaterialTheme {
+            Column {
+                if (openDialog.value) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            openDialog.value = false
+                        },
+                        title = {
+                            Text(text = "Add this movie to favourites?")
+                        },
+                        text = {
+                            Text(movie.title)
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    if (selectedMovies.size == 10) Toast.makeText(
+                                        context,
+                                        "Favourite list is full!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    else {
+                                        movie.isFav = true
+                                        selectedMovies.add(movie)
+                                        moviesList.remove(movie)
+                                        Toast.makeText(
+                                            context,
+                                            "Movie added",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    openDialog.value = false
+                                }) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            Button(
+                                onClick = {
+                                    openDialog.value = false
+                                }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+            }
+
+        }
     }
 
     //use movie frame to make lists of movie frame
@@ -133,7 +170,8 @@ class View() {
         movies: List<Movie>,
         appBarTitle: String,
         isSearchBarEnabled: Boolean,
-        context: Context
+        context: Context,
+        hide: Boolean
     ) {
         //show circular progress bar when necessary by changing load value
         progressHUD()
@@ -154,6 +192,8 @@ class View() {
                         mutableStateOf(TextFieldValue())
                     }
 
+                    val focus = LocalFocusManager.current
+
                     Row() {
                         Surface(modifier = Modifier.weight(1f)) {
                             OutlinedTextField(
@@ -170,12 +210,14 @@ class View() {
                                         modifier = Modifier
                                             .padding(all = 10.dp)
                                             .clickable {
+                                                focus.clearFocus()
                                                 progressLoader.value = true
                                                 Log.d("myLog", "Query: " + textState.value.text)
                                                 searchMovieAPICall(textState.value.text)
                                             }
                                     )
-                                }
+                                },
+                                keyboardActions = KeyboardActions(onDone = { focus.clearFocus()})
                             )
                         }
                     }
@@ -183,20 +225,47 @@ class View() {
             }
 
             //list of movies
-
+            val dialog = remember { mutableStateOf(false) }
             Box {
                 LazyColumn(state = listState) {
                     items(movies.size) { index ->
                         movieFrame(movie = movies[index], context)
                     }
                 }
-                addFloatingButton()
+                if(!hide) addFloatingButton(dialog)
+            }
+            MaterialTheme {
+                if (dialog.value) {
+                    AlertDialog(onDismissRequest = { dialog.value = false },
+                        title = {
+                            Text("Proceed with recommendation based on selected movies?")
+                        },
+                        text = {
+                            Text(text = "Total movies selected: " + selectedMovies.size)
+                        },
+                        confirmButton = {
+                            Button(onClick = {
+                                val intent = Intent(context, RecmdMovies::class.java)
+                                context.startActivity(intent)
+                                dialog.value = false
+                            }) {
+                                Text(text = "Proceed")
+                            }
+                        },
+                        dismissButton = {
+                            Button(onClick = {
+                                dialog.value = false
+                            }) {
+                                Text("Cancel")
+                            }
+                        })
+                }
             }
         }
     }
 
     @Composable
-    fun addFloatingButton() {
+    fun addFloatingButton(dialog: MutableState<Boolean>) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -204,14 +273,14 @@ class View() {
                 .fillMaxWidth()
                 .padding(all = 20.dp),
             verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.End
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val context = LocalContext.current
-            FloatingActionButton(
+
+            ExtendedFloatingActionButton(
                 onClick = {
                     if (selectedMovies.size > 0) {
-                        val intent = Intent(context, RecmdMovies::class.java)
-                        context.startActivity(intent)
+                        dialog.value = true
                     } else Toast.makeText(
                         context,
                         "Favourite movies list is empty",
@@ -220,7 +289,8 @@ class View() {
                 }, containerColor = Color(ContextCompat.getColor(context, R.color.titleColor)),
                 contentColor = Color.White
             ) {
-                Icon(imageVector = Icons.Rounded.PlayArrow, contentDescription = "fab")
+                Text(text = "Recommend")
+//                Icon(imageVector = Icons.Rounded.PlayArrow, contentDescription = "fab")
             }
         }
     }

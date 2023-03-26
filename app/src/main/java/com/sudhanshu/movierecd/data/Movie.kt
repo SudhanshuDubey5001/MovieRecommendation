@@ -7,4 +7,5 @@ data class Movie(
     val genre: String,
     val poster: String,
     val isTMdb: Boolean,
+    var isFav: Boolean
 )

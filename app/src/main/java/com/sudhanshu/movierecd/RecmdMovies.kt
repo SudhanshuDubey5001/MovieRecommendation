@@ -1,5 +1,6 @@
 package com.sudhanshu.movierecd
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -85,13 +86,17 @@ class RecmdMovies : ComponentActivity() {
                 movies = recmdMoviesList,
                 "Recommendations",
                 false,
-                this
+                this,
+                true
             )
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 selectedMovies.clear()
+                val intent = Intent(this@RecmdMovies, MainActivity::class.java)
+                this@RecmdMovies.startActivity(intent)
+                this@RecmdMovies.finish()
             }
         })
     }
@@ -99,6 +104,7 @@ class RecmdMovies : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         recommendationClient.unload()
+        recmdMoviesList.clear()
     }
 
 }

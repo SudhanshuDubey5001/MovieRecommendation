@@ -112,12 +112,19 @@ class RecommendationClient(private val context: Context, private val config: Con
     ): List<Result> {
         return withContext(Dispatchers.Default) {
             val results = ArrayList<Result>()
-
-            for (i in 0..config.topK) {
+            var i = 0
+            while (results.size <= config.topK) {
                 val movie: Movie2? = candidates.get(outputIds[i])
                 if (movie != null) {
-                    if(!selectedMovies.contains(movie)) results.add(Result(outputIds[i], movie, confidences[i]))
-                } else Log.d("myLog", "No movie found with id : "+outputIds[i])
+                    if (!selectedMovies.contains(movie)) results.add(
+                        Result(
+                            outputIds[i],
+                            movie,
+                            confidences[i]
+                        )
+                    )
+                } else Log.d("myLog", "No movie found with id : " + outputIds[i])
+                i++
             }
             results
         }

@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             setupGenreCodesToGenre()
-            View().makeMovieList(moviesList, "Add movies", true,this)
+            View().makeMovieList(moviesList, "Add movies", true,this, false)
         }
     }
 }
@@ -108,7 +108,8 @@ fun onResponse(response: DiscoverMoviesResponse) {
                 result.vote_average,
                 setGenre,
                 result.poster_path,
-                true
+                true,
+                false
             )
         )
     }
@@ -167,6 +168,7 @@ fun response_searchQueryForArray(response: SearchMovie) {
         response.imdbRating,
         response.Genre,
         response.Poster,
+        false,
         false
     )
     recmdMoviesList.add(movie)
@@ -182,9 +184,6 @@ fun response_searchQuery(response: SearchMovie) {
     isLoading = false
     //empty the movies list and only show items selected by the user
     moviesList.clear()
-    for (movie in selectedMovies) {
-        moviesList.add(movie)
-    }
     //add the search result at first index
     val movie = Movie(
         response.Title,
@@ -192,13 +191,10 @@ fun response_searchQuery(response: SearchMovie) {
         response.imdbRating,
         response.Genre,
         response.Poster,
+        false,
         false
     )
-    moviesList.add(
-        0,
-        movie
-    )
-//    recmdMoviesList.add(movie)
+    moviesList.add(movie)
 }
 
 
