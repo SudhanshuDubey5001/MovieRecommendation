@@ -1,4 +1,5 @@
-Movie Recommendation Android Application\n
+Movie Recommendation Android Application
+
 Built for demonstration purpose 
 
 Usage - 
