@@ -10,9 +10,11 @@ import androidx.compose.runtime.mutableStateListOf
 import com.sudhanshu.movierecd.utils.Config
 import com.sudhanshu.movierecd.data.Movie
 import com.sudhanshu.movierecd.data.Movie2
+import com.sudhanshu.movierecd.data.ResultRecommendedMovies
 import com.sudhanshu.movierecd.utils.MovieUtils
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.math.round
 
 val recmdMoviesList = mutableStateListOf<Movie>()
 
@@ -29,7 +31,9 @@ class RecmdMovies : ComponentActivity() {
 
         runBlocking {
             launch {
+                //get the tensorflow dataset movie list
                 tensorFlowMovieList = movieUtils.getContent()
+
                 //search movies in the tensorflow dataset otherwise add movies with similar genres
                 var found = false
 
@@ -61,25 +65,16 @@ class RecmdMovies : ComponentActivity() {
 
                 recommendationClient.load()
                 val list = recommendationClient.recommend(inputMovieData)
-                Log.d("myLog", "Movies recommendations : " + list)
+                Log.d("myLog", "Movies recommendations : " + list.size)
                 //now search all the 10 movies to get Movie data->
-                var searchQueries = mutableListOf<String>()
+                val resultRecommendedMovies = mutableMapOf<String, Float>()
                 for (result in list) {
-                    searchQueries.add(result.item.title)
+//                    searchQueries.add(ResultRecommendedMovies(result.item.title, result.confidence))
+                    resultRecommendedMovies.put(result.item.title, result.confidence * 100f)
                 }
-                searchMovieAPICallForArray(searchQueries)
+                MainActivity().setupSearchMovieArrayAndCofindence(resultRecommendedMovies)
             }
         }
-//        recmdMoviesList.add(
-//            Movie(
-//                "Batman",
-//                "here we go again",
-//                "2.4",
-//                "thriller",
-//                "https://m.media-amazon.com/images/M/MV5BMTMwNjAxMTc0Nl5BMl5BanBnXkFtZTcwODc3ODk5Mg@@._V1_SX300.jpg",
-//                false
-//            )
-//        )
 
         setContent {
             View().makeMovieList(

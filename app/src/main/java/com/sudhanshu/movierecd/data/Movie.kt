@@ -7,5 +7,11 @@ data class Movie(
     val genre: String,
     val poster: String,
     val isTMdb: Boolean,
-    var isFav: Boolean
+    var isRecommended: Boolean,
+    val confidence: String = "--"
+)
+
+data class ResultRecommendedMovies(
+    val title: String,
+    val cl: Float
 )

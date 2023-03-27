@@ -2,7 +2,6 @@ package com.sudhanshu.movierecd
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -11,11 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,9 +33,6 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.sudhanshu.movierecd.data.Movie
 
 class View() {
-
-    var progressLoader = mutableStateOf(false)
-
     @Composable
     fun progressHUD() {
         if (progressLoader.value) {
@@ -64,7 +56,7 @@ class View() {
         val openDialog = remember { mutableStateOf(false) }
 
         Surface(shape = MaterialTheme.shapes.medium, shadowElevation = 10.dp, onClick = {
-            openDialog.value = true
+            if(!movie.isRecommended) openDialog.value = true
         }) {
             Row(modifier = Modifier.padding(10.dp)) {
                 if (movie.isTMdb) {
@@ -106,8 +98,39 @@ class View() {
                     }
                     Spacer(modifier = Modifier.height(10.dp))
 
-//                    Surface(modifier = Modifier.align(Alignment.End)) {
-//                    }
+                    //show confidence % if the movie object is from recommended movies
+                    if (movie.isRecommended) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                .padding(10.dp)
+                        ) {
+                            Column() {
+                                Text(
+                                    text = "Match", style = TextStyle(
+                                        color = Color(
+                                            ContextCompat.getColor(
+                                                context,
+                                                R.color.titleColor
+                                            )
+                                        ),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                                Text(
+                                    text = movie.confidence + "%", style = TextStyle(
+                                        color = Color(
+                                            ContextCompat.getColor(
+                                                context,
+                                                R.color.match
+                                            )
+                                        ),
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                            }
+                        }
+                    }
 
                 }
             }
@@ -135,7 +158,6 @@ class View() {
                                         Toast.LENGTH_SHORT
                                     ).show()
                                     else {
-                                        movie.isFav = true
                                         selectedMovies.add(movie)
                                         moviesList.remove(movie)
                                         Toast.makeText(
@@ -171,10 +193,8 @@ class View() {
         appBarTitle: String,
         isSearchBarEnabled: Boolean,
         context: Context,
-        hide: Boolean
+        hideFloatingButton: Boolean
     ) {
-        //show circular progress bar when necessary by changing load value
-        progressHUD()
         val listState = rememberLazyListState()
         Column {
             //App bar
@@ -211,13 +231,13 @@ class View() {
                                             .padding(all = 10.dp)
                                             .clickable {
                                                 focus.clearFocus()
-                                                progressLoader.value = true
                                                 Log.d("myLog", "Query: " + textState.value.text)
-                                                searchMovieAPICall(textState.value.text)
+                                                MainActivity().searchMovieAPICall(textState.value.text)
+                                                textState.value = TextFieldValue("")
                                             }
                                     )
                                 },
-                                keyboardActions = KeyboardActions(onDone = { focus.clearFocus()})
+                                keyboardActions = KeyboardActions(onDone = { focus.clearFocus() })
                             )
                         }
                     }
@@ -232,7 +252,8 @@ class View() {
                         movieFrame(movie = movies[index], context)
                     }
                 }
-                if(!hide) addFloatingButton(dialog)
+                if (!hideFloatingButton) addFloatingButton(dialog)
+                progressHUD()
             }
             MaterialTheme {
                 if (dialog.value) {
@@ -291,6 +312,29 @@ class View() {
             ) {
                 Text(text = "Recommend")
 //                Icon(imageVector = Icons.Rounded.PlayArrow, contentDescription = "fab")
+            }
+        }
+    }
+
+    @Composable
+    fun showDialogFrame(title: String, text: String, dialog: MutableState<Boolean>) {
+        MaterialTheme {
+            if (dialog.value) {
+                AlertDialog(onDismissRequest = { dialog.value = false },
+                    title = {
+                        Text(text = title)
+                    },
+                    text = {
+                        Text(text = text)
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        Button(onClick = {
+                            dialog.value = false
+                        }) {
+                            Text("Okay")
+                        }
+                    })
             }
         }
     }
