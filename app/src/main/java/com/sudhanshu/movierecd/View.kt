@@ -4,12 +4,17 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,7 +61,7 @@ class View() {
         val openDialog = remember { mutableStateOf(false) }
 
         Surface(shape = MaterialTheme.shapes.medium, shadowElevation = 10.dp, onClick = {
-            if(!movie.isRecommended) openDialog.value = true
+            if (!movie.isRecommended) openDialog.value = true
         }) {
             Row(modifier = Modifier.padding(10.dp)) {
                 if (movie.isTMdb) {
@@ -195,10 +200,16 @@ class View() {
         context: Context,
         hideFloatingButton: Boolean
     ) {
+        showWelcomeDialog(
+            title = "Welcome",
+            text = "Greetings! We are pleased to offer you personalized movie recommendations based on your preferences. You may select up to 10 movies from our list or alternatively, use the search bar to explore and add more options. We look forward to providing you with a delightful movie-watching experience.",
+            dialog = welcomedialog
+        )
+
         val listState = rememberLazyListState()
         Column {
             //App bar
-            CenterAlignedTopAppBar(title = { Text(appBarTitle) })
+            MainContent(appBarTitle = appBarTitle, isRecommended = isSearchBarEnabled)
 
             //Search movie
             if (isSearchBarEnabled) {
@@ -254,6 +265,7 @@ class View() {
                 }
                 if (!hideFloatingButton) addFloatingButton(dialog)
                 progressHUD()
+                showSnackBar()
             }
             MaterialTheme {
                 if (dialog.value) {
@@ -302,11 +314,12 @@ class View() {
                 onClick = {
                     if (selectedMovies.size > 0) {
                         dialog.value = true
-                    } else Toast.makeText(
-                        context,
-                        "Favourite movies list is empty",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    } else snackbarController.set(0,"demo snackbar")
+//                        Toast.makeText(
+//                        context,
+//                        "Favourite movies list is empty",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
                 }, containerColor = Color(ContextCompat.getColor(context, R.color.titleColor)),
                 contentColor = Color.White
             ) {
@@ -317,7 +330,7 @@ class View() {
     }
 
     @Composable
-    fun showDialogFrame(title: String, text: String, dialog: MutableState<Boolean>) {
+    fun showWelcomeDialog(title: String, text: String, dialog: MutableState<Boolean>) {
         MaterialTheme {
             if (dialog.value) {
                 AlertDialog(onDismissRequest = { dialog.value = false },
@@ -338,4 +351,83 @@ class View() {
             }
         }
     }
+
+    @Composable
+    fun MainContent(appBarTitle: String, isRecommended: Boolean) {
+
+        // Create a boolean variable
+        // to store the display menu state
+        var mDisplayMenu by remember { mutableStateOf(false) }
+
+        // fetching local context
+        val mContext = LocalContext.current
+
+        // Creating a Top bar
+        CenterAlignedTopAppBar(
+            title = { Text(appBarTitle) },
+            actions = {
+                if (isRecommended) {
+                    // Creating Icon button for dropdown menu
+                    IconButton(onClick = { mDisplayMenu = !mDisplayMenu }) {
+                        Icon(Icons.Default.MoreVert, "")
+                    }
+
+                    // Creating a dropdown menu
+                    DropdownMenu(
+                        expanded = mDisplayMenu,
+                        onDismissRequest = { mDisplayMenu = false }
+                    ) {
+
+                        // Creating dropdown menu item, on click
+                        // would create a Toast message
+                        DropdownMenuItem(text = { Text(text = "Empty favourite list") },
+                            onClick = {
+                                selectedMovies.clear()
+                                Toast.makeText(
+                                    mContext,
+                                    "Favourite list cleared",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                mDisplayMenu = false
+                            })
+                    }
+                }
+            })
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun showSnackBar() {
+        val snackbarHostState = remember { SnackbarHostState() }
+        if (snackbarController[0] !== "") {
+            Log.d("myLog","Showing snackbar now........")
+            snackbarController[0] = "" //resetting
+            SnackbarHost(
+                hostState = snackbarHostState,
+                snackbar = { snackbarData: SnackbarData ->
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(2.dp, Color.Black),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .wrapContentSize()
+                    ) {
+                        Column(
+                            modifier = Modifier
+//                                .fillMaxSize()
+//                                .fillMaxHeight()
+//                                .fillMaxWidth()
+                                .padding(all = 30.dp),
+                            verticalArrangement = Arrangement.Bottom,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(imageVector = Icons.Default.Notifications, contentDescription = "")
+                            Text(text = snackbarController[0])
+                        }
+                    }
+                }
+            )
+        }
+    }
 }
+

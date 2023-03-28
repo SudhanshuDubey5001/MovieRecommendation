@@ -1,5 +1,6 @@
 package com.sudhanshu.movierecd
 
+
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -20,17 +21,25 @@ val constants: Constants = Constants()
 val genres = mutableMapOf<Int, String>()
 var moviesList = mutableStateListOf<Movie>()
 var progressLoader = mutableStateOf(false)
+var welcomedialog = mutableStateOf(false)
+var snackbarController = mutableStateListOf<String>()
 
 class MainActivity : ComponentActivity() {
 
     override fun onStart() {
+        snackbarController.add("")
         super.onStart()
+        //show welcome dialog
+        welcomedialog.value = true
+    }
+
+    override fun onStop() {
+        super.onStop()
         //clear the list when activity starts
         selectedMovies.clear()
         moviesList.clear()
-        Log.d("my", "Lists are clear! ")
+        snackbarController.clear()
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +61,9 @@ class MainActivity : ComponentActivity() {
     fun onFailure(t: Throwable) {
         Log.d("myLog", "Error: " + t.toString())
         progressLoader.value = false
-        Toast.makeText(this, "Check your internet connection", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this@MainActivity, "Check your internet connection", Toast.LENGTH_SHORT)
+//            .show()
+        snackbarController.set(0, "Check your internet connection")
     }
 
     //setup genre codes
@@ -165,41 +176,48 @@ class MainActivity : ComponentActivity() {
     }
 
     fun response_searchQueryForArray(response: SearchMovie) {
-        progressLoader.value = false
         Log.d("myLog", response.toString())
-        //add the search result at first index
-        val movie = Movie(
-            response.Title,
-            response.Plot,
-            response.imdbRating,
-            response.Genre,
-            response.Poster,
-            false,
-            true,
-            confidenceString[i]
-        )
-        recmdMoviesList.add(movie)
+        //false warning as the search can return null sometimes
+        if (response.Title != null) {
+            val movie = Movie(
+                response.Title + " (" + response.Year + ")",
+                response.Plot,
+                response.imdbRating,
+                response.Genre,
+                response.Poster,
+                false,
+                true,
+                confidenceString[i]
+            )
+            recmdMoviesList.add(movie)
+        }
         i++;
         searchMovieAPICallForArray()
     }
 
     //catch the response of search query
     fun response_searchQuery(response: SearchMovie) {
-        progressLoader.value = false
-        Log.d("myLog", response.toString())
-        //empty the movies list and only show items selected by the user
-        moviesList.clear()
-        //add the search result at first index
-        val movie = Movie(
-            response.Title,
-            response.Plot,
-            response.imdbRating,
-            response.Genre,
-            response.Poster,
-            false,
-            false
-        )
-        moviesList.add(movie)
+        //false warning as the search can return null sometimes
+        if (response.Title != null) {
+            progressLoader.value = false
+            Log.d("myLog", response.toString())
+            //empty the movies list and only show items selected by the user
+            moviesList.clear()
+            //add the search result at first index
+            val movie = Movie(
+                response.Title + " (" + response.Year + ")",
+                response.Plot,
+                response.imdbRating,
+                response.Genre,
+                response.Poster,
+                false,
+                false
+            )
+            moviesList.add(movie)
+        } else {
+            progressLoader.value = false
+            snackbarController.set(0, "Cannot find the movie")
+        }
     }
 
     fun setupSearchMovieArrayAndCofindence(query: MutableMap<String, Float>) {

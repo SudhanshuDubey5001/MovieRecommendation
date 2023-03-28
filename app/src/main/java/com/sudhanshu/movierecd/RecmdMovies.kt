@@ -10,7 +10,6 @@ import androidx.compose.runtime.mutableStateListOf
 import com.sudhanshu.movierecd.utils.Config
 import com.sudhanshu.movierecd.data.Movie
 import com.sudhanshu.movierecd.data.Movie2
-import com.sudhanshu.movierecd.data.ResultRecommendedMovies
 import com.sudhanshu.movierecd.utils.MovieUtils
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking

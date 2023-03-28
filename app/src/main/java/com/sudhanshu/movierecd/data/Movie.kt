@@ -10,8 +10,3 @@ data class Movie(
     var isRecommended: Boolean,
     val confidence: String = "--"
 )
-
-data class ResultRecommendedMovies(
-    val title: String,
-    val cl: Float
-)
