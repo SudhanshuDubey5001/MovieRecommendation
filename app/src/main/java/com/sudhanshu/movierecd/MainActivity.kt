@@ -1,6 +1,7 @@
 package com.sudhanshu.movierecd
 
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -12,6 +13,7 @@ import com.sudhanshu.movierecd.services.RetrofitBuilder
 import com.sudhanshu.movierecd.services.model.GetGenreCodes
 import com.sudhanshu.movierecd.data.SearchMovie
 import com.sudhanshu.movierecd.services.model.discoverMovies.DiscoverMoviesResponse
+import com.sudhanshu.movierecd.utils.MovieUtils
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -22,15 +24,15 @@ val genres = mutableMapOf<Int, String>()
 var moviesList = mutableStateListOf<Movie>()
 var progressLoader = mutableStateOf(false)
 var welcomedialog = mutableStateOf(false)
-var snackbarController = mutableStateListOf<String>()
+var movienotFounddialog = mutableStateOf(false)
+var errorDialogBox = mutableStateOf(false)
 
 class MainActivity : ComponentActivity() {
 
     override fun onStart() {
-        snackbarController.add("")
         super.onStart()
         //show welcome dialog
-        welcomedialog.value = true
+        MovieUtils(this).showWelcomeDialog()
     }
 
     override fun onStop() {
@@ -38,7 +40,6 @@ class MainActivity : ComponentActivity() {
         //clear the list when activity starts
         selectedMovies.clear()
         moviesList.clear()
-        snackbarController.clear()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,9 +62,7 @@ class MainActivity : ComponentActivity() {
     fun onFailure(t: Throwable) {
         Log.d("myLog", "Error: " + t.toString())
         progressLoader.value = false
-//        Toast.makeText(this@MainActivity, "Check your internet connection", Toast.LENGTH_SHORT)
-//            .show()
-        snackbarController.set(0, "Check your internet connection")
+        errorDialogBox.value = true
     }
 
     //setup genre codes
@@ -216,7 +215,7 @@ class MainActivity : ComponentActivity() {
             moviesList.add(movie)
         } else {
             progressLoader.value = false
-            snackbarController.set(0, "Cannot find the movie")
+            movienotFounddialog.value = true
         }
     }
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -27,12 +28,15 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.sudhanshu.movierecd.data.Movie
@@ -65,19 +69,21 @@ class View() {
         }) {
             Row(modifier = Modifier.padding(10.dp)) {
                 if (movie.isTMdb) {
-                    GlideImage(
+                    AsyncImage(
                         model = constants.image_baseURL + movie.poster,
                         contentDescription = "poster_image_TMdb",
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        error = painterResource(id = R.drawable.error_image)
                     )
                 } else {
-                    GlideImage(
+                    AsyncImage(
                         model = movie.poster,
                         contentDescription = "poster_image_OMdb",
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(id = R.drawable.error_image)
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
@@ -205,6 +211,8 @@ class View() {
             text = "Greetings! We are pleased to offer you personalized movie recommendations based on your preferences. You may select up to 10 movies from our list or alternatively, use the search bar to explore and add more options. We look forward to providing you with a delightful movie-watching experience.",
             dialog = welcomedialog
         )
+        showMoviesNotFoundDialog(dialog = movienotFounddialog)
+        showErrorDialogBox(dialog = errorDialogBox)
 
         val listState = rememberLazyListState()
         Column {
@@ -229,6 +237,7 @@ class View() {
                         Surface(modifier = Modifier.weight(1f)) {
                             OutlinedTextField(
                                 value = textState.value,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 onValueChange = {
                                     textState.value = it
                                     Log.d("myLog", "Edittext value: " + textState.value)
@@ -248,7 +257,13 @@ class View() {
                                             }
                                     )
                                 },
-                                keyboardActions = KeyboardActions(onDone = { focus.clearFocus() })
+                                keyboardActions = KeyboardActions(onDone = { focus.clearFocus() },
+                                onSearch = {
+                                    focus.clearFocus()
+                                    Log.d("myLog", "Query: " + textState.value.text)
+                                    MainActivity().searchMovieAPICall(textState.value.text)
+                                    textState.value = TextFieldValue("")
+                                })
                             )
                         }
                     }
@@ -265,7 +280,6 @@ class View() {
                 }
                 if (!hideFloatingButton) addFloatingButton(dialog)
                 progressHUD()
-                showSnackBar()
             }
             MaterialTheme {
                 if (dialog.value) {
@@ -314,17 +328,16 @@ class View() {
                 onClick = {
                     if (selectedMovies.size > 0) {
                         dialog.value = true
-                    } else snackbarController.set(0,"demo snackbar")
-//                        Toast.makeText(
-//                        context,
-//                        "Favourite movies list is empty",
-//                        Toast.LENGTH_SHORT
-//                    ).show()
+                    } else
+                        Toast.makeText(
+                        context,
+                        "Favourite movies list is empty",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }, containerColor = Color(ContextCompat.getColor(context, R.color.titleColor)),
                 contentColor = Color.White
             ) {
                 Text(text = "Recommend")
-//                Icon(imageVector = Icons.Rounded.PlayArrow, contentDescription = "fab")
             }
         }
     }
@@ -346,6 +359,52 @@ class View() {
                             dialog.value = false
                         }) {
                             Text("Okay")
+                        }
+                    })
+            }
+        }
+    }
+
+    @Composable
+    fun showMoviesNotFoundDialog(dialog: MutableState<Boolean>) {
+        MaterialTheme {
+            if (dialog.value) {
+                AlertDialog(onDismissRequest = { dialog.value = false },
+                    title = {
+                        Text(text = "Apologies")
+                    },
+                    text = {
+                        Text(text = "Movie not found")
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        Button(onClick = {
+                            dialog.value = false
+                        }) {
+                            Text("Okay")
+                        }
+                    })
+            }
+        }
+    }
+
+    @Composable
+    fun showErrorDialogBox(dialog: MutableState<Boolean>) {
+        MaterialTheme {
+            if (dialog.value) {
+                AlertDialog(onDismissRequest = { dialog.value = false },
+                    title = {
+                        Text(text = "Error")
+                    },
+                    text = {
+                        Text(text = "Uh-oh :( Seems like internet is not working properly")
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        Button(onClick = {
+                            dialog.value = false
+                        }) {
+                            Text("Cancel")
                         }
                     })
             }
@@ -393,41 +452,6 @@ class View() {
                     }
                 }
             })
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun showSnackBar() {
-        val snackbarHostState = remember { SnackbarHostState() }
-        if (snackbarController[0] !== "") {
-            Log.d("myLog","Showing snackbar now........")
-            snackbarController[0] = "" //resetting
-            SnackbarHost(
-                hostState = snackbarHostState,
-                snackbar = { snackbarData: SnackbarData ->
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(2.dp, Color.Black),
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .wrapContentSize()
-                    ) {
-                        Column(
-                            modifier = Modifier
-//                                .fillMaxSize()
-//                                .fillMaxHeight()
-//                                .fillMaxWidth()
-                                .padding(all = 30.dp),
-                            verticalArrangement = Arrangement.Bottom,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(imageVector = Icons.Default.Notifications, contentDescription = "")
-                            Text(text = snackbarController[0])
-                        }
-                    }
-                }
-            )
-        }
     }
 }
 
