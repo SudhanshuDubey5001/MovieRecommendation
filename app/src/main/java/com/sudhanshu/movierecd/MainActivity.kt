@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
         //clear the list when activity starts
         selectedMovies.clear()
         moviesList.clear()
+        //checking if CI works :)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
