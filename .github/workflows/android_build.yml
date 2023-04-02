@@ -1,0 +1,30 @@
+# name of the build file
+name: Android Build
+
+# when to run the build action, i have defined whenever there is a push action
+on:
+  push:
+    branches:
+      -main
+
+# define the jobs (environment + tasks) that will carry out
+jobs:
+  build:
+
+    runs-on: ubuntu-latest # using Github provided runner (environment) or use custom like Docker
+
+    steps: # steps that will happen
+      - uses: actions/checkout@v1 # to check out the code, this is Github provided
+      # this is our defined step
+      - name: Set up JDK # name of the carried out task..name anything (relevant)
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      # run all the tests now
+      - name: Run tests
+        run: ./gradlew test
+
+      # build the project
+      - name: Build project
+        run: ./gradlew assemble
