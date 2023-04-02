@@ -2,10 +2,7 @@
 name: Android Build
 
 # when to run the build action, i have defined whenever there is a push action
-on:
-  push:
-    branches:
-      -main
+on: pull_request
 
 # define the jobs (environment + tasks) that will carry out
 jobs:
