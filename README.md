@@ -21,3 +21,6 @@ Libraries and APIs used -
 5. Glide (for images)
 6. TMdb (movie database API for populating initial screen with recent/popular movies)
 7. OMdb (movie database to search movies based on title and also to get recommendation results)
+
+Update - 
+Linked the project to Continuous Integration (CI) pipeline using Jenkins. 
