@@ -1,6 +1,8 @@
-![logo](https://play-lh.googleusercontent.com/XgSa5JOdWudeITPF5PtfCmXELSvfb4fddHk4VcYkAxnsqWeFe1yCE8jTklwfpbN-aQ=s128)
+![logo](https://play-lh.googleusercontent.com/XgSa5JOdWudeITPF5PtfCmXELSvfb4fddHk4VcYkAxnsqWeFe1yCE8jTklwfpbN-aQ=s128) 
 # Movie Recommendation
-An Android application to make Movie recommendations based on user's selections of likable movies. 
+An Android application to make Movie recommendations based on user's selections of likable movies.
+
+[Google Playstore](https://play.google.com/store/apps/details?id=com.sudhanshu.movierecd&hl=en&gl=US)
 
 ## Features 
 - User can select movies from the recent/trending movies list or search specific movies/series from search bar.
