@@ -29,6 +29,8 @@ var errorDialogBox = mutableStateOf(false)
 
 class MainActivity : ComponentActivity() {
 
+    val compD = CompositeDisposable()
+
     override fun onStart() {
         super.onStart()
         //show welcome dialog
@@ -41,6 +43,11 @@ class MainActivity : ComponentActivity() {
         selectedMovies.clear()
         moviesList.clear()
         //checking if CI works :)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        compD.clear()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +75,6 @@ class MainActivity : ComponentActivity() {
 
     //setup genre codes
     fun setupGenreCodesToGenre() {
-        val compD = CompositeDisposable()
         compD.add(
             RetrofitBuilder()
                 .build(constants.baseURL_TMdb)
@@ -92,7 +98,6 @@ class MainActivity : ComponentActivity() {
 
     //get movie data from internet for initial population of list with popular/trending movies
     fun loadMovieDiscoverData() {
-        val compD = CompositeDisposable()
         compD.add(
             RetrofitBuilder()
                 .build(constants.baseURL_TMdb)
@@ -138,7 +143,6 @@ class MainActivity : ComponentActivity() {
         progressLoader.value = true
         val queryModified = query.replace("\\s".toRegex(), "+")
         Log.d("myLog", "Search query: " + queryModified)
-        val compD = CompositeDisposable()
         compD.add(
             RetrofitBuilder()
                 .build(constants.baseURL_OMdb)
@@ -157,7 +161,6 @@ class MainActivity : ComponentActivity() {
     fun searchMovieAPICallForArray() {
         if (i < searchQueriesArray.size) {
             Log.d("myLog", "Search query: " + searchQueriesArray[i])
-            val compD = CompositeDisposable()
             compD.add(
                 RetrofitBuilder()
                     .build(constants.baseURL_OMdb)
